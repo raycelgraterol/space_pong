@@ -62,6 +62,11 @@ class PlayState(BaseState):
         self.game_over = False
         self.winner = None
 
+        # Menú de pausa
+        self.pause_menu_options = ["Continuar", "Salir al Menú"]
+        self.pause_menu_selected = 0
+        self.show_exit_confirmation = False
+
         # Control de tiempo para reinicio
         self.reset_timer = 0
         self.reset_delay = 1.0  # segundos
@@ -160,14 +165,25 @@ class PlayState(BaseState):
             event: Evento a procesar
         """
         if event.type == pygame.KEYDOWN:
-            # Pausar con ESC
+            # Manejar diálogo de confirmación de salida
+            if self.show_exit_confirmation:
+                self._handle_confirmation_input(event)
+                return
+
+            # Manejar menú de pausa
+            if self.paused:
+                self._handle_pause_menu_input(event)
+                return
+
+            # Pausar con ESC durante el juego
             if event.key == pygame.K_ESCAPE:
                 if self.game_over:
                     # Volver al menú
                     if self.game.state_manager:
                         self.game.state_manager.change_state(GameState.MENU)
                 else:
-                    self.paused = not self.paused
+                    self.paused = True
+                    self.pause_menu_selected = 0
                 return
 
             # Reiniciar si terminó el juego
@@ -178,6 +194,49 @@ class PlayState(BaseState):
         # Pasar eventos al input handler si no está pausado
         if not self.paused and not self.game_over:
             self.input_handler.handle_event(event)
+
+    def _handle_pause_menu_input(self, event: pygame.event.Event):
+        """
+        Maneja la entrada del menú de pausa.
+
+        Args:
+            event: Evento de teclado
+        """
+        if event.key in (pygame.K_UP, pygame.K_w):
+            self.pause_menu_selected = (self.pause_menu_selected - 1) % len(self.pause_menu_options)
+        elif event.key in (pygame.K_DOWN, pygame.K_s):
+            self.pause_menu_selected = (self.pause_menu_selected + 1) % len(self.pause_menu_options)
+        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            self._select_pause_option()
+        elif event.key == pygame.K_ESCAPE:
+            # ESC en el menú de pausa = continuar
+            self.paused = False
+
+    def _handle_confirmation_input(self, event: pygame.event.Event):
+        """
+        Maneja la entrada del diálogo de confirmación.
+
+        Args:
+            event: Evento de teclado
+        """
+        if event.key in (pygame.K_s, pygame.K_RETURN):
+            # Confirmar salida
+            self.show_exit_confirmation = False
+            self.paused = False
+            if self.game.state_manager:
+                self.game.state_manager.change_state(GameState.MENU)
+        elif event.key in (pygame.K_n, pygame.K_ESCAPE):
+            # Cancelar, volver al menú de pausa
+            self.show_exit_confirmation = False
+
+    def _select_pause_option(self):
+        """Ejecuta la opción seleccionada del menú de pausa"""
+        if self.pause_menu_selected == 0:
+            # Continuar
+            self.paused = False
+        elif self.pause_menu_selected == 1:
+            # Salir al menú - mostrar confirmación
+            self.show_exit_confirmation = True
 
     def update(self, dt: float):
         """
@@ -365,17 +424,78 @@ class PlayState(BaseState):
         overlay.fill((0, 0, 0, 150))
         screen.blit(overlay, (0, 0))
 
+        # Si hay confirmación pendiente, mostrar ese diálogo
+        if self.show_exit_confirmation:
+            self._render_exit_confirmation(screen)
+            return
+
         # Texto de pausa
-        font = pygame.font.Font(None, 74)
-        text = font.render("PAUSA", True, (255, 255, 255))
-        rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        screen.blit(text, rect)
+        font_title = pygame.font.Font(None, 74)
+        title = font_title.render("PAUSA", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+        screen.blit(title, title_rect)
+
+        # Opciones del menú
+        font_option = pygame.font.Font(None, 48)
+        start_y = SCREEN_HEIGHT // 2
+
+        for i, option in enumerate(self.pause_menu_options):
+            if i == self.pause_menu_selected:
+                # Opción seleccionada
+                color = (100, 255, 100)
+                prefix = "> "
+            else:
+                color = (200, 200, 200)
+                prefix = "  "
+
+            text = font_option.render(prefix + option, True, color)
+            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, start_y + i * 50))
+            screen.blit(text, text_rect)
 
         # Instrucciones
-        font_small = pygame.font.Font(None, 36)
-        hint = font_small.render("Presiona ESC para continuar", True, (200, 200, 200))
-        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        font_hint = pygame.font.Font(None, 28)
+        hint = font_hint.render("Flechas/W/S: Navegar | ENTER: Seleccionar | ESC: Continuar", True, (150, 150, 150))
+        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130))
         screen.blit(hint, hint_rect)
+
+    def _render_exit_confirmation(self, screen: pygame.Surface):
+        """
+        Renderiza el diálogo de confirmación de salida.
+
+        Args:
+            screen: Superficie donde dibujar
+        """
+        # Cuadro de diálogo
+        dialog_width = 450
+        dialog_height = 180
+        dialog_x = (SCREEN_WIDTH - dialog_width) // 2
+        dialog_y = (SCREEN_HEIGHT - dialog_height) // 2
+
+        # Fondo del diálogo
+        dialog_bg = pygame.Surface((dialog_width, dialog_height), pygame.SRCALPHA)
+        dialog_bg.fill((30, 30, 50, 240))
+        screen.blit(dialog_bg, (dialog_x, dialog_y))
+
+        # Borde
+        pygame.draw.rect(screen, (100, 150, 255), (dialog_x, dialog_y, dialog_width, dialog_height), 3)
+
+        # Texto de confirmación
+        font_title = pygame.font.Font(None, 42)
+        title = font_title.render("¿Salir al menú principal?", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, dialog_y + 50))
+        screen.blit(title, title_rect)
+
+        # Advertencia
+        font_warning = pygame.font.Font(None, 30)
+        warning = font_warning.render("Se perderá el progreso actual", True, (255, 200, 100))
+        warning_rect = warning.get_rect(center=(SCREEN_WIDTH // 2, dialog_y + 90))
+        screen.blit(warning, warning_rect)
+
+        # Opciones
+        font_options = pygame.font.Font(None, 36)
+        options_text = font_options.render("[S] Sí, salir    [N] No, continuar", True, (150, 255, 150))
+        options_rect = options_text.get_rect(center=(SCREEN_WIDTH // 2, dialog_y + 140))
+        screen.blit(options_text, options_rect)
 
     def _render_game_over(self, screen: pygame.Surface):
         """

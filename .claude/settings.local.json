@@ -7,7 +7,14 @@
       "Bash(python tools/create_placeholders.py:*)",
       "Bash(where:*)",
       "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m pip install pygame)",
-      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"d:/repositories/space_pong/tools/create_placeholders.py\")"
+      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"d:/repositories/space_pong/tools/create_placeholders.py\")",
+      "Bash(del \"d:\\\\repositories\\\\space_pong\\\\claude.MD\")",
+      "Bash(rm:*)",
+      "Bash(python:*)",
+      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"d:/repositories/space_pong/main.py\")",
+      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m venv \"d:/repositories/space_pong/venv\")",
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\" -m pip install:*)",
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\":*)"
     ]
   }
 }
