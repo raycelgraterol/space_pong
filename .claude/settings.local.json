@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tools/sprite_extractor.py:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python tools/create_placeholders.py:*)",
+      "Bash(where:*)",
+      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m pip install pygame)",
+      "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"d:/repositories/space_pong/tools/create_placeholders.py\")"
+    ]
+  }
+}
