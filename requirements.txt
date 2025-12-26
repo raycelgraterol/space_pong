@@ -1,9 +1,9 @@
 # Space Pong - Dependencies
 # Core game engine
-pygame==2.5.2
+pygame==2.6.1
 
 # Image processing for sprite extraction
-pillow==10.2.0
+pillow==12.0.0
 
 # Optional: For optimized physics calculations
-numpy==1.26.3
+numpy==2.4.0

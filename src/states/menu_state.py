@@ -255,8 +255,9 @@ class MenuState(BaseState):
                 )
                 screen.blit(indicator, ind_rect)
 
-                # Fondo del item
-                item_width = 300
+                # Fondo del item - ancho dinámico basado en el texto
+                text_surface = self.font_menu.render(item.text, True, color)
+                item_width = text_surface.get_width() + 40
                 bg_rect = pygame.Rect(
                     SCREEN_WIDTH // 2 - item_width // 2 - 10,
                     item.y_position - 20,

@@ -74,8 +74,18 @@ class PlayState(BaseState):
         # AI Controller (se inicializa si es necesario)
         self.ai_controller = None
 
-        # Fondo
-        self.background_tile = None
+        # Sistema de niveles (solo en modo PVE)
+        self.current_level = 1
+        self.level_points = 0  # Puntos del jugador en este nivel
+        self.points_for_next_level = 3  # Aumenta +1 por nivel
+
+        # Velocidades base para el sistema de niveles
+        self.base_player_speed = 400  # Velocidad del jugador (constante)
+        self.base_bot_speed = 240     # Bot empieza lento (60% del jugador)
+        self.base_ball_speed = 200    # Ball empieza lenta
+
+        # Fondo - lista de tiles para variedad
+        self.background_tiles = []
 
     def enter(self):
         """Inicializa el estado al entrar"""
@@ -106,8 +116,11 @@ class PlayState(BaseState):
         # Configurar input handler
         self.input_handler.set_ships(self.player1, self.player2)
 
-        # Cargar fondo
-        self.background_tile = asset_manager.get_image('star_tile')
+        # Cargar todos los tiles de fondo
+        tile_names = ['star_tile', 'star_tile_dense', 'star_tile_sparse', 
+                      'star_tile_nebula', 'star_tile_cluster']
+        self.background_tiles = [asset_manager.get_image(name) for name in tile_names]
+        self.background_tiles = [t for t in self.background_tiles if t is not None]
 
         # Inicializar AI si es necesario
         if self.game_mode == GameMode.PVE:
@@ -141,6 +154,12 @@ class PlayState(BaseState):
         self.winner = None
         self.reset_timer = 0
 
+        # Resetear sistema de niveles
+        self.current_level = 1
+        self.level_points = 0
+        self.points_for_next_level = 3
+        self._apply_level_speeds()
+
     def _reset_round(self, towards_player: Optional[int] = None):
         """
         Reinicia una ronda después de un punto.
@@ -152,6 +171,56 @@ class PlayState(BaseState):
         self.player2.reset_position()
         self.ball.reset(towards_player)
         self.reset_timer = 0
+
+    def _apply_level_speeds(self):
+        """Aplica las velocidades segun el nivel actual"""
+        if self.game_mode != GameMode.PVE:
+            return
+
+        level = self.current_level
+
+        # Calcular velocidades segun nivel
+        # Bot: aumenta 15% por nivel
+        bot_speed = self.base_bot_speed * (1 + (level - 1) * 0.15)
+
+        # Ball: aumenta 30% por nivel (x2 que el bot)
+        ball_speed = self.base_ball_speed * (1 + (level - 1) * 0.30)
+
+        # Limitar velocidades maximas
+        bot_speed = min(bot_speed, 500)
+        ball_speed = min(ball_speed, 600)
+
+        # Aplicar a las entidades
+        if self.player2 and self.player2.is_bot:
+            self.player2.speed = bot_speed
+
+        if self.ball:
+            self.ball.speed = ball_speed
+            # Normalizar velocidad actual manteniendo direccion
+            if self.ball.velocity.length() > 0:
+                self.ball.velocity = self.ball.velocity.normalize() * ball_speed
+
+        # Ajustar dificultad de la IA segun nivel
+        if self.ai_controller:
+            if level <= 2:
+                self.ai_controller.set_difficulty('easy')
+            elif level <= 4:
+                self.ai_controller.set_difficulty('medium')
+            else:
+                self.ai_controller.set_difficulty('hard')
+
+    def _check_level_up(self):
+        """Verifica si el jugador sube de nivel"""
+        if self.game_mode != GameMode.PVE:
+            return
+
+        # Solo contar puntos del jugador 1
+        if self.level_points >= self.points_for_next_level:
+            self.current_level += 1
+            self.level_points = 0
+            self.points_for_next_level += 1  # Cada nivel requiere +1 punto mas
+            self._apply_level_speeds()
+            print(f'NIVEL UP! Ahora nivel {self.current_level}')
 
     def exit(self):
         """Limpieza al salir del estado"""
@@ -334,7 +403,11 @@ class PlayState(BaseState):
             if scorer == 1:
                 self.player1.add_score()
                 self.scoreboard.add_point_p1()
-                # Meteorito va hacia el que recibió el punto
+                # Contar punto para el sistema de niveles
+                if self.game_mode == GameMode.PVE:
+                    self.level_points += 1
+                    self._check_level_up()
+                # Meteorito va hacia el que recibio el punto
                 self._start_reset_round(towards_player=2)
             elif scorer == 2:
                 self.player2.add_score()
@@ -386,6 +459,10 @@ class PlayState(BaseState):
         # UI
         self.scoreboard.render(screen)
 
+        # Marcador de nivel (solo en PVE)
+        if self.game_mode == GameMode.PVE:
+            self._render_level_indicator(screen)
+
         # Overlay de pausa
         if self.paused:
             self._render_pause_overlay(screen)
@@ -396,21 +473,66 @@ class PlayState(BaseState):
 
     def _render_background(self, screen: pygame.Surface):
         """
-        Renderiza el fondo espacial.
+        Renderiza el fondo espacial con tiles variados.
 
         Args:
             screen: Superficie donde dibujar
         """
+        import random
         screen.fill(SPACE_BLACK)
 
-        # Tilear el fondo si hay sprite
-        if self.background_tile:
-            tile_w = self.background_tile.get_width()
-            tile_h = self.background_tile.get_height()
+        # Tilear el fondo con tiles aleatorios
+        if self.background_tiles:
+            tile_w = self.background_tiles[0].get_width()
+            tile_h = self.background_tiles[0].get_height()
 
+            # Seed fijo para que el patron sea consistente entre frames
+            random.seed(12345)
             for x in range(0, SCREEN_WIDTH, tile_w):
                 for y in range(0, SCREEN_HEIGHT, tile_h):
-                    screen.blit(self.background_tile, (x, y))
+                    tile = random.choice(self.background_tiles)
+                    screen.blit(tile, (x, y))
+
+
+    def _render_level_indicator(self, screen: pygame.Surface):
+        """Renderiza el indicador de nivel en el centro superior"""
+        font_level = pygame.font.Font(None, 36)
+        font_progress = pygame.font.Font(None, 24)
+
+        # Texto del nivel
+        level_text = f"NIVEL {self.current_level}"
+        level_surface = font_level.render(level_text, True, (100, 200, 255))
+        level_rect = level_surface.get_rect(center=(SCREEN_WIDTH // 2, 30))
+
+        # Fondo del indicador
+        bg_rect = pygame.Rect(level_rect.left - 15, level_rect.top - 5,
+                              level_rect.width + 30, level_rect.height + 25)
+        pygame.draw.rect(screen, (20, 40, 60), bg_rect, border_radius=8)
+        pygame.draw.rect(screen, (100, 200, 255), bg_rect, 2, border_radius=8)
+
+        screen.blit(level_surface, level_rect)
+
+        # Barra de progreso
+        progress = self.level_points / self.points_for_next_level
+        bar_width = 80
+        bar_height = 6
+        bar_x = SCREEN_WIDTH // 2 - bar_width // 2
+        bar_y = level_rect.bottom + 5
+
+        # Fondo de la barra
+        pygame.draw.rect(screen, (40, 40, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
+        # Progreso
+        if progress > 0:
+            pygame.draw.rect(screen, (100, 255, 150),
+                           (bar_x, bar_y, int(bar_width * progress), bar_height), border_radius=3)
+        # Borde
+        pygame.draw.rect(screen, (100, 200, 255), (bar_x, bar_y, bar_width, bar_height), 1, border_radius=3)
+
+        # Texto de progreso
+        progress_text = f"{self.level_points}/{self.points_for_next_level}"
+        progress_surface = font_progress.render(progress_text, True, (150, 150, 180))
+        progress_rect = progress_surface.get_rect(center=(SCREEN_WIDTH // 2, bar_y + bar_height + 12))
+        screen.blit(progress_surface, progress_rect)
 
     def _render_pause_overlay(self, screen: pygame.Surface):
         """

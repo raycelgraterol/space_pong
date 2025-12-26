@@ -46,6 +46,11 @@ class AIController:
         self.is_returning_to_center = False
         self.last_ball_direction = 0
 
+        # Sistema de desenfoque aleatorio
+        self.drift_offset = 0  # Desviacion actual del objetivo
+        self.drift_timer = 0   # Timer para cambiar el drift
+        self.drift_target = 0  # Objetivo del drift
+
     def update(self, dt: float, ball: 'Ball', ship: 'Ship') -> int:
         """
         Actualiza el controlador y retorna la dirección de movimiento.
@@ -58,6 +63,9 @@ class AIController:
         Returns:
             -1 (arriba), 0 (quieto), 1 (abajo)
         """
+        # Actualizar sistema de desenfoque (drift)
+        self._update_drift(dt)
+
         # Actualizar timer de reacción
         self.reaction_timer -= dt
 
@@ -91,8 +99,9 @@ class AIController:
 
             self.target_y = SCREEN_HEIGHT // 2
 
-        # Calcular dirección de movimiento
-        return self._get_movement_direction(ship.position.y, self.target_y)
+        # Calcular dirección de movimiento con drift aplicado
+        effective_target = self.target_y + self.drift_offset
+        return self._get_movement_direction(ship.position.y, effective_target)
 
     def _predict_ball_position(self, ball: 'Ball', target_x: float) -> float:
         """
@@ -150,6 +159,35 @@ class AIController:
         error_range = self.settings['prediction_error']
         return random.uniform(-error_range, error_range)
 
+    def _update_drift(self, dt: float):
+        """
+        Actualiza el sistema de desenfoque aleatorio.
+        El bot pierde momentáneamente el foco del objetivo.
+
+        Args:
+            dt: Delta time en segundos
+        """
+        focus_drift = self.settings.get('focus_drift', 0.3)
+        drift_speed = self.settings.get('drift_speed', 1.0)
+
+        # Actualizar timer del drift
+        self.drift_timer -= dt
+
+        # Cuando el timer expira, calcular nuevo objetivo de drift
+        if self.drift_timer <= 0:
+            # Rango de desenfoque basado en dificultad (% de la pantalla)
+            max_drift = SCREEN_HEIGHT * focus_drift * 0.5
+
+            # Nuevo objetivo de drift aleatorio
+            self.drift_target = random.uniform(-max_drift, max_drift)
+
+            # Resetear timer (intervalo aleatorio)
+            self.drift_timer = random.uniform(0.5, 2.0)
+
+        # Interpolar suavemente hacia el objetivo de drift
+        drift_delta = self.drift_target - self.drift_offset
+        self.drift_offset += drift_delta * drift_speed * dt
+
     def _get_movement_direction(self, current_y: float, target_y: float) -> int:
         """
         Calcula la dirección de movimiento hacia el objetivo.
@@ -192,3 +230,7 @@ class AIController:
         self.current_error = 0
         self.is_returning_to_center = False
         self.last_ball_direction = 0
+        # Reset del sistema de drift
+        self.drift_offset = 0
+        self.drift_timer = 0
+        self.drift_target = 0

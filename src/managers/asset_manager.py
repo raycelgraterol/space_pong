@@ -57,8 +57,12 @@ class AssetManager:
         # Cargar efectos
         self.load_image('laser_grid', EFFECTS_DIR / 'laser_grid.png')
 
-        # Cargar fondos
+        # Cargar fondos - todos los tiles de estrellas
         self.load_image('star_tile', BACKGROUNDS_DIR / 'star_tile.png')
+        self.load_image('star_tile_dense', BACKGROUNDS_DIR / 'star_tile_dense.png')
+        self.load_image('star_tile_sparse', BACKGROUNDS_DIR / 'star_tile_sparse.png')
+        self.load_image('star_tile_nebula', BACKGROUNDS_DIR / 'star_tile_nebula.png')
+        self.load_image('star_tile_cluster', BACKGROUNDS_DIR / 'star_tile_cluster.png')
 
         print(f"Assets cargados: {len(self._images)} imágenes")
 

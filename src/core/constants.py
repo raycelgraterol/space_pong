@@ -72,22 +72,28 @@ LASER_TOUCH_PENALTY = 1  # puntos que gana el oponente si tocas el láser
 # =============================================================================
 AI_DIFFICULTY = {
     'easy': {
-        'reaction_delay': 0.2,  # segundos
-        'prediction_error': 50,  # pixeles
-        'speed_multiplier': 0.7,
-        'mistake_chance': 0.3
+        'reaction_delay': 0.3,  # segundos - reaccion lenta
+        'prediction_error': 120,  # pixeles - muy impreciso
+        'speed_multiplier': 0.6,
+        'mistake_chance': 0.4,
+        'focus_drift': 0.8,  # 80% de desenfoque aleatorio
+        'drift_speed': 4.0 # velocidad del desenfoque
     },
     'medium': {
-        'reaction_delay': 0.1,
-        'prediction_error': 25,
-        'speed_multiplier': 0.85,
-        'mistake_chance': 0.15
+        'reaction_delay': 0.15,
+        'prediction_error': 60,  # pixeles
+        'speed_multiplier': 0.8,
+        'mistake_chance': 0.2,
+        'focus_drift': 0.4,  # 40% de desenfoque
+        'drift_speed': 2.0
     },
     'hard': {
         'reaction_delay': 0.05,
-        'prediction_error': 10,
+        'prediction_error': 15,
         'speed_multiplier': 1.0,
-        'mistake_chance': 0.05
+        'mistake_chance': 0.05,
+        'focus_drift': 0.1,  # 10% de desenfoque
+        'drift_speed': 1.0
     }
 }
 

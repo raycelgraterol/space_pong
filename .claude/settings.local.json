@@ -14,7 +14,10 @@
       "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"d:/repositories/space_pong/main.py\")",
       "Bash(\"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m venv \"d:/repositories/space_pong/venv\")",
       "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\" -m pip install:*)",
-      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\":*)"
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\":*)",
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\" -c:*)",
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\" \"d:/repositories/space_pong/tools/_add_level_system.py\")",
+      "Bash(\"d:/repositories/space_pong/venv/Scripts/python.exe\" -m pip install --upgrade pip pygame pillow numpy)"
     ]
   }
 }
